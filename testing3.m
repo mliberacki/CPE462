@@ -1,3 +1,5 @@
+%anthony was here
+
 he = imread('pic2.JPG');
 
 cform = makecform('srgb2lab');
