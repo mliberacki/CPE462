@@ -100,33 +100,35 @@ for i=1:length(zero)
     
 end
 
-%My way to adjust for picking up so much hair
-%Just cutoff the parts where there isn't as much white
-%Usually towards the top of the head
-mean_ratio = mean(~isinf(ratio_vect(:,1)));
-std_ratio = std(~isinf(ratio_vect(:,1)));
-highest_ratio = mean_ratio + std_ratio;
-
-%Initialize RGB values
-y = size(seg_image_rgb,2);
-x = size(seg_image_rgb,1);
-R=zeros(x,y); G=zeros(x,y); B=zeros(x,y);
-R=seg_image_rgb(:,:,1); G=seg_image_rgb(:,:,2); B=seg_image_rgb(:,:,3);
-R = double(R); G = double(G); B=double(B);
-
-%Loop through the image and make parts black for small black:white 
-for i=1:size(R,1)
-    
-    if ratio_vect(i)>highest_ratio  || isinf(ratio_vect(i))
-        for k=1:size(R,2)
-            
-            G(i,k) = 0;
-            R(i,k) = 0;
-            B(i,k) = 0;
-            
-        end
-    end 
-end
+% %My way to adjust for picking up so much hair
+% %Just cutoff the parts where there isn't as much white
+% %Usually towards the top of the head
+% mean_ratio = mean(~isinf(ratio_vect(:,1)));
+% std_ratio = std(~isinf(ratio_vect(:,1)));
+% highest_ratio = mean_ratio + std_ratio;
+% 
+% lowest_ratio = mean_ratio -std_ratio;
+% 
+% %Initialize RGB values
+% y = size(seg_image_rgb,2);
+% x = size(seg_image_rgb,1);
+% R=zeros(x,y); G=zeros(x,y); B=zeros(x,y);
+% R=seg_image_rgb(:,:,1); G=seg_image_rgb(:,:,2); B=seg_image_rgb(:,:,3);
+% R = double(R); G = double(G); B=double(B);
+% 
+% %Loop through the image and make parts black for small black:white
+% for i=1:size(R,1)
+%     
+%     if (ratio_vect(i)>highest_ratio && ratio_vect(i)<lowest_ratio)  || isinf(ratio_vect(i))
+%         for k=1:size(R,2)
+%             
+%             G(i,k) = 0;
+%             R(i,k) = 0;
+%             B(i,k) = 0;
+%             
+%         end
+%     end
+% end
 
 
 seg_image_rgb2 = cat(3,uint8(R),uint8(G),uint8(B));
@@ -154,11 +156,11 @@ for i=1:size(edge_image,1)
             
             if count==0
                 index = i;
-                face_top_array = white_data;                   
+                face_top_array = white_data;
             end
-            count = count +1;          
-        end        
-    end   
+            count = count +1;
+        end
+    end
 end
 
 
@@ -167,7 +169,7 @@ start_col = 0;
 
 %Get column index where the ones start
 for i=1:length(face_top_array)
-   
+    
     if face_top_array(1,i)==1
         
         if start_col==0
@@ -175,7 +177,7 @@ for i=1:length(face_top_array)
         end
         
         count_ones = count_ones + 1;
-    
+        
     end
     
 end
@@ -190,52 +192,98 @@ centroids = cat(1, s.Centroid);
 imshow(bl_image);hold on;
 plot(centroids(:,1), centroids(:,2), 'b*');
 
-centroid_range1 = round(start_col + count_ones/4);
-centroid_range2 = round(mid_face_index + 2.5*count_ones/2);
+% centroid_range1 = round(start_col + count_ones/4);
+% centroid_range2 = round(mid_face_index + 2.5*count_ones/2);
+% 
+% face_cen_vect = [];
+% 
+% for i=1:size(centroids,1)
+%     
+%     if centroids(i,1) > centroid_range1 && centroids(i,1) < centroid_range2
+%         
+%         if centroids(i,2) > mid_face_index+10
+%             face_cen_vect = vertcat(centroids(i,:),face_cen_vect);
+%             
+%         end
+%         
+%         
+%         
+%     end
+%     
+% end
+% 
+% if size(face_cen_vect,1) > 1
+%     %Pick centroid with point closest to col index of mid face top
+%     dist = face_cen_vect(:,2) - mid_top_face(:,2);
+%     
+%     smallest_point = min(dist);
+%     
+%     for i=1:length(dist)
+%         if dist(i)==smallest_point
+%             face_centroid =  face_cen_vect(i,:);
+%         end
+%     end
+% elseif size(face_cen_vect,1)==1
+%     face_centroid = face_cen_vect(1,:);
+% end
 
-face_cen_vect = [];
 
-for i=1:size(centroids,1)
-    
-    if centroids(i,1) > centroid_range1 && centroids(i,1) < centroid_range2
+%What I'd like to do is find the nearest edge from canny to the centroid
+%Hopefully, this will be the nose
+%Let's try it!
+one_indexes = [];
+
+
+for i=1:size(edge_image,1)
+    for j=1:size(edge_image,2)
         
-        if centroids(i,2) > mid_face_index+10
-            face_cen_vect = vertcat(centroids(i,:),face_cen_vect);
-        
+        if edge_image(i,j)==1
+            one_indexes  = vertcat( [ i , j] , one_indexes);
         end
-        
-        
         
     end
     
 end
+% 
+% face_centroid2 = [face_centroid(2) , face_centroid(1)];
+% 
+% IDX = knnsearch(one_indexes,face_centroid2);
+% 
+% nearest_neigh = one_indexes(IDX,:);
 
-if size(face_cen_vect,1) > 1
-    %Pick centroid with point closest to col index of mid face top
-    dist = face_cen_vect(:,2) - mid_top_face(:,2);
-    
-    smallest_point = min(dist);
-    
-    for i=1:length(dist)
-        if dist(i)==smallest_point
-           face_centroid =  face_cen_vect(i,:);
-        end
-    end
-elseif size(face_cen_vect,1)==1
-    face_centroid = face_cen_vect(1,:);
-end
+%Find the centroid closest to the center of the image
+center_image = [round(size(edge_image,2)/2), round(size(edge_image,1)/2) ];
+IDX = knnsearch(centroids,center_image);
+nearest_neigh = centroids(IDX,:);figure;
+imshow(edge_image);hold on;
+plot(nearest_neigh(:,1), nearest_neigh(:,2), 'b*');
+
+hold on;
+plot(centroids(:,1), centroids(:,2), 'r*');
 
 
-
+face_centroid = nearest_neigh;
 dist_btwn_top_center = face_centroid(:,2) - mid_top_face(:,1);
 
-mid_bottom_face = [ face_centroid(1,2)+dist_btwn_top_center/2 , mid_face_index];
-    %face_centroid(1,2)+index , mid_face_index];
+mid_bottom_face = [ face_centroid(1,2)+2*dist_btwn_top_center/3 , mid_face_index];
+%face_centroid(1,2)+index , mid_face_index];
+
+%Find the edge to mid bottom face
+IDX = knnsearch(one_indexes,mid_bottom_face);
+nearest_neigh2 = one_indexes(IDX,:);
+%hold on; plot(nearest_neigh2(:,2), nearest_neigh2(:,1), 'b*');
+
+mid_bottom_face = nearest_neigh2;
+
+
+%The center of the face is probably above the face. I can track the nose if
+%i search below that point.
+
 
 imshow(seg_image_rgb2);
 hold on;
 plot(mid_bottom_face(:,2), mid_bottom_face(:,1), 'b*');
-hold on; 
+hold on;
 plot(mid_top_face(:,2), mid_top_face(:,1), 'b*');
 hold on;
 plot(face_centroid(:,1), face_centroid(:,2), 'b*');
